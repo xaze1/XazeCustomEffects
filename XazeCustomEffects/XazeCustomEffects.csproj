@@ -1,0 +1,102 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+    <Import Project="$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props"
+            Condition="Exists('$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props')"/>
+    <PropertyGroup>
+        <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
+        <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
+        <ProjectGuid>{9C6968F0-E57A-4E68-878D-8A64E35ED5A0}</ProjectGuid>
+        <OutputType>Library</OutputType>
+        <AppDesignerFolder>Properties</AppDesignerFolder>
+        <RootNamespace>XazeCustomEffects</RootNamespace>
+        <AssemblyName>XazeCustomEffects</AssemblyName>
+        <TargetFrameworkVersion>v4.8</TargetFrameworkVersion>
+        <LangVersion>latest</LangVersion>
+        <FileAlignment>512</FileAlignment>
+    </PropertyGroup>
+    <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
+        <PlatformTarget>AnyCPU</PlatformTarget>
+        <DebugSymbols>true</DebugSymbols>
+        <DebugType>full</DebugType>
+        <Optimize>false</Optimize>
+        <OutputPath>bin\Debug\</OutputPath>
+        <DefineConstants>DEBUG;TRACE</DefineConstants>
+        <ErrorReport>prompt</ErrorReport>
+        <WarningLevel>4</WarningLevel>
+    </PropertyGroup>
+    <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
+        <PlatformTarget>AnyCPU</PlatformTarget>
+        <DebugType>pdbonly</DebugType>
+        <Optimize>true</Optimize>
+        <OutputPath>bin\Release\</OutputPath>
+        <DefineConstants>TRACE</DefineConstants>
+        <ErrorReport>prompt</ErrorReport>
+        <WarningLevel>4</WarningLevel>
+    </PropertyGroup>
+    <ItemGroup>
+        <Reference Include="0Harmony, Version=2.3.6.0, Culture=neutral, processorArchitecture=MSIL">
+          <HintPath>..\packages\Lib.Harmony.2.3.6\lib\net48\0Harmony.dll</HintPath>
+        </Reference>
+        <Reference Include="Assembly-CSharp">
+          <HintPath>..\..\..\OneDrive\Desktop\publiciser\LabApi-References\Assembly-CSharp-Publicized.dll</HintPath>
+        </Reference>
+        <Reference Include="Assembly-CSharp-firstpass">
+          <HintPath>..\..\..\OneDrive\Desktop\publiciser\LabApi-References\Assembly-CSharp-firstpass-Publicized.dll</HintPath>
+        </Reference>
+        <Reference Include="CommandSystem.Core">
+          <HintPath>..\..\..\OneDrive\Desktop\publiciser\LabApi-References\CommandSystem.Core-Publicized.dll</HintPath>
+        </Reference>
+        <Reference Include="LabApi">
+          <HintPath>..\..\..\OneDrive\Desktop\publiciser\LabApi-References\LabApi-Publicized.dll</HintPath>
+        </Reference>
+        <Reference Include="Mirror">
+          <HintPath>..\..\..\OneDrive\Desktop\publiciser\LabApi-References\Mirror-Publicized.dll</HintPath>
+        </Reference>
+        <Reference Include="NorthwoodLib">
+          <HintPath>..\..\..\OneDrive\Desktop\publiciser\LabApi-References\NorthwoodLib-Publicized.dll</HintPath>
+        </Reference>
+        <Reference Include="Pooling">
+          <HintPath>..\..\..\OneDrive\Desktop\publiciser\LabApi-References\Pooling-Publicized.dll</HintPath>
+        </Reference>
+        <Reference Include="Snake">
+          <HintPath>..\..\..\OneDrive\Desktop\publiciser\LabApi-References\Snake-Publicized.dll</HintPath>
+        </Reference>
+        <Reference Include="System"/>
+        <Reference Include="System.Core"/>
+        <Reference Include="System.Data"/>
+        <Reference Include="System.Xml"/>
+        <Reference Include="UnityEngine">
+          <HintPath>..\..\..\..\..\Program Files (x86)\Steam\steamapps\common\SCP Secret Laboratory Dedicated Server\SCPSL_Data\Managed\UnityEngine.dll</HintPath>
+        </Reference>
+        <Reference Include="UnityEngine.CoreModule">
+          <HintPath>..\..\..\..\..\Program Files (x86)\Steam\steamapps\common\SCP Secret Laboratory Dedicated Server\SCPSL_Data\Managed\UnityEngine.CoreModule.dll</HintPath>
+        </Reference>
+        <Reference Include="XazeAPI">
+          <HintPath>..\..\XazeAPI\XazeAPI\bin\Release\XazeAPI.dll</HintPath>
+        </Reference>
+    </ItemGroup>
+    <ItemGroup>
+        <Compile Include="Commands\CustomEffectCommand.cs" />
+        <Compile Include="Features\CustomEffectBase.cs" />
+        <Compile Include="Features\CustomEffectsController.cs" />
+        <Compile Include="Features\CustomTickingBase.cs" />
+        <Compile Include="Loader.cs" />
+        <Compile Include="Patches\SearchTimePatch.cs" />
+        <Compile Include="Patches\StaminaPatch.cs" />
+        <Compile Include="Patches\UsableItemPatch.cs" />
+        <Compile Include="Patches\UseConsumablePatch.cs" />
+        <Compile Include="Properties\AssemblyInfo.cs"/>
+    </ItemGroup>
+    <ItemGroup>
+      <None Include="packages.config" />
+    </ItemGroup>
+    <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets"/>
+    <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
+         Other similar extension points exist, see Microsoft.Common.targets.
+    <Target Name="BeforeBuild">
+    </Target>
+    <Target Name="AfterBuild">
+    </Target>
+    -->
+
+</Project>
