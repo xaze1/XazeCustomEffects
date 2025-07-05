@@ -62,6 +62,46 @@ namespace XazeCustomEffects.Features
             return TryGet(plr.ReferenceHub, out controller);
         }
 
+        public static void EnableEffect<T>(ReferenceHub Hub, int intensity, float duration = 0, bool addDuration = false) where T : CustomEffectBase
+        {
+            if (!TryGet(Hub, out var controller))
+            {
+                return;
+            }
+            
+            controller.ChangeState<T>(intensity, duration, addDuration);
+        }
+
+        public static void EnableEffect<T>(Player Hub, int intensity, float duration = 0, bool addDuration = false) where T : CustomEffectBase
+        {
+            if (!TryGet(Hub, out var controller))
+            {
+                return;
+            }
+            
+            controller.ChangeState<T>(intensity, duration, addDuration);
+        }
+
+        public static void DisableEffect<T>(ReferenceHub Hub) where T : CustomEffectBase
+        {
+            if (!TryGet(Hub, out var controller))
+            {
+                return;
+            }
+            
+            controller.DisableEffect<T>();
+        }
+
+        public static void DisableEffect<T>(Player Hub) where T : CustomEffectBase
+        {
+            if (!TryGet(Hub, out var controller))
+            {
+                return;
+            }
+            
+            controller.DisableEffect<T>();
+        }
+
         public bool TryGetEffect(string effectName, out CustomEffectBase playerEffect)
         {
             CustomEffectBase[] allEffects = AllEffects;
@@ -133,7 +173,7 @@ namespace XazeCustomEffects.Features
         }
 
         [Server]
-        public T ChangeState<T>(byte intensity, float duration = 0f, bool addDuration = false) where T : CustomEffectBase
+        public T ChangeState<T>(int intensity, float duration = 0f, bool addDuration = false) where T : CustomEffectBase
         {
             if (!NetworkServer.active)
             {
