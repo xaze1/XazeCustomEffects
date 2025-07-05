@@ -3,6 +3,7 @@ using HarmonyLib;
 using LabApi.Loader.Features.Plugins;
 using MEC;
 using XazeAPI.API.AudioCore.FakePlayers;
+using XazeAPI.API.Extensions;
 using XazeCustomEffects.Features;
 
 namespace XazeCustomEffects
@@ -35,13 +36,16 @@ namespace XazeCustomEffects
 
             var customEffectController = hub.gameObject.AddComponent<CustomEffectsController>();
 
-            foreach (var type in typeof(Plugin).Assembly.GetTypes())
+            LabApi.Loader.PluginLoader.Plugins.ForEach(x =>
             {
-                if (type.IsAbstract || !typeof(CustomEffectBase).IsAssignableFrom(type))
-                    continue;
+                foreach (var type in x.GetType().Assembly.GetTypes())
+                {
+                    if (type.IsAbstract || !typeof(CustomEffectBase).IsAssignableFrom(type))
+                        continue;
 
-                customEffectController.gameObject.AddComponent(type);
-            }
+                    customEffectController.gameObject.AddComponent(type);
+                }
+            });
 
             customEffectController.LoadEffects();
         }

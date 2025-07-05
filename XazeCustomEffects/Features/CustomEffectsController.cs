@@ -168,10 +168,10 @@ namespace XazeCustomEffects.Features
 
         public void DisableAllEffects()
         {
-            CustomEffectBase[] allEffects = AllEffects;
-            for (int i = 0; i < allEffects.Length; i++)
+            var allEffects = AllEffects;
+            foreach (var t in allEffects)
             {
-                allEffects[i].ServerDisable();
+                t.ServerDisable();
             }
         }
 
@@ -189,16 +189,18 @@ namespace XazeCustomEffects.Features
         {
             for (int i = 0; i < EffectsLength; i++)
             {
-                if (AllEffects[i] is T)
+                if (AllEffects[i] is not T)
                 {
-                    byte index = (byte)Mathf.Min(i, 255);
-                    TargetRpcReceivePulse(Hub.connectionToClient, index);
-                    SpectatorNetworking.ForeachSpectatorOf(Hub, delegate (ReferenceHub x)
-                    {
-                        TargetRpcReceivePulse(x.connectionToClient, index);
-                    });
-                    break;
+                    continue;
                 }
+                
+                byte index = (byte)Mathf.Min(i, 255);
+                TargetRpcReceivePulse(Hub.connectionToClient, index);
+                SpectatorNetworking.ForeachSpectatorOf(Hub, delegate (ReferenceHub x)
+                {
+                    TargetRpcReceivePulse(x.connectionToClient, index);
+                });
+                break;
             }
         }
 
@@ -223,7 +225,7 @@ namespace XazeCustomEffects.Features
             effectsGameObject = this.gameObject;
             AllEffects = effectsGameObject.GetComponentsInChildren<CustomEffectBase>();
             EffectsLength = AllEffects.Length;
-            CustomEffectBase[] allEffects = AllEffects;
+            var allEffects = AllEffects;
             foreach (CustomEffectBase statusEffectBase in allEffects)
             {
                 _effectsByType.Add(statusEffectBase.GetType(), statusEffectBase);
@@ -279,22 +281,21 @@ namespace XazeCustomEffects.Features
             {
                 if (ReferenceHub.AllHubs.TryGetFirst((ReferenceHub x) => x.playerEffectsController._wasSpectated, out var first))
                 {
-                    CustomEffectBase[] allEffects = activeCustomControllers.GetValueSafe(first).AllEffects;
-                    for (int i = 0; i < allEffects.Length; i++)
+                    var allEffects = activeCustomControllers.GetValueSafe(first).AllEffects;
+                    foreach (var t in allEffects)
                     {
-                        allEffects[i].OnStopSpectating();
+                        t.OnStopSpectating();
                     }
 
                     activeCustomControllers.GetValueSafe(first)._wasSpectated = false;
                 }
 
-                if (SpectatorTargetTracker.TryGetTrackedPlayer(out var hub))
+                if (!SpectatorTargetTracker.TryGetTrackedPlayer(out var hub)) return;
                 {
                     CustomEffectsController playerEffectsController = activeCustomControllers.GetValueSafe(hub);
-                    CustomEffectBase[] allEffects = playerEffectsController.AllEffects;
-                    for (int i = 0; i < allEffects.Length; i++)
+                    foreach (var t in playerEffectsController.AllEffects)
                     {
-                        allEffects[i].OnBeginSpectating();
+                        t.OnBeginSpectating();
                     }
 
                     playerEffectsController._wasSpectated = true;

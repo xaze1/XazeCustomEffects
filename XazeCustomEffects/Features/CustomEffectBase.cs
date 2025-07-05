@@ -8,7 +8,7 @@ using UnityEngine;
 
 namespace XazeCustomEffects.Features
 {
-    public class CustomEffectBase : MonoBehaviour
+    public abstract class CustomEffectBase : MonoBehaviour
     {
         public static readonly Dictionary<ReferenceHub, List<CustomEffectBase>> ActiveEffects = new();
 
@@ -34,7 +34,7 @@ namespace XazeCustomEffects.Features
             Mixed,
         }
 
-        public virtual EffectClassification Classification { get; set; }
+        public abstract EffectClassification Classification { get; }
 
         protected virtual bool AllowEnabling
         {
@@ -119,18 +119,20 @@ namespace XazeCustomEffects.Features
 
         public virtual void Update()
         {
-            if (IsEnabled)
+            if (!IsEnabled)
             {
-                if (!ActiveEffects.ContainsKey(Hub))
-                {
-                    ActiveEffects.Add(Hub, new());
-                }
-                
-                ActiveEffects[Hub].Add(this);
-
-                RefreshTime();
-                OnEffectUpdate();
+                return;
             }
+            
+            if (!ActiveEffects.ContainsKey(Hub))
+            {
+                ActiveEffects.Add(Hub, new());
+            }
+                
+            ActiveEffects[Hub].Add(this);
+
+            RefreshTime();
+            OnEffectUpdate();
         }
 
         public void RefreshTime()

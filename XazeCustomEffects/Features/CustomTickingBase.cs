@@ -9,27 +9,22 @@ namespace XazeCustomEffects.Features
         public override void Enabled()
         {
             base.Enabled();
-            this._timeTillTick = this.TimeBetweenTicks;
+            _timeTillTick = TimeBetweenTicks;
         }
 
         public override void OnEffectUpdate()
         {
             base.OnEffectUpdate();
-            this._timeTillTick -= Time.deltaTime;
-            if (this._timeTillTick > 0f)
+            _timeTillTick -= Time.deltaTime;
+            if (_timeTillTick > 0f)
             {
                 return;
             }
-            this._timeTillTick += this.TimeBetweenTicks;
-            this.OnTick();
+            _timeTillTick += TimeBetweenTicks;
+            OnTick();
         }
 
-        public CustomTickingBase()
-        {
-        }
-
-        public float TimeBetweenTicks = 1f;
-
+        public virtual float TimeBetweenTicks => 1f;
         public float _timeTillTick;
     }
 }
