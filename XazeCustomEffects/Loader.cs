@@ -8,6 +8,7 @@
 using System;
 using HarmonyLib;
 using LabApi.Loader.Features.Plugins;
+using LabApi.Loader.Features.Plugins.Enums;
 using MEC;
 using XazeAPI.API.AudioCore.FakePlayers;
 using XazeAPI.API.Extensions;
@@ -25,7 +26,8 @@ namespace XazeCustomEffects
         public override string Author => "xaze_";
         public override Version Version => new(1, 0, 0);
         public override Version RequiredApiVersion => new(0, 0, 0);
-        
+        public override LoadPriority Priority => LoadPriority.Lowest;
+
         public override void Enable()
         {
             HarmonyPatch.PatchCategory(PatchGroup);
@@ -45,7 +47,7 @@ namespace XazeCustomEffects
 
             LabApi.Loader.PluginLoader.Plugins.ForEach(x =>
             {
-                foreach (var type in x.GetType().Assembly.GetTypes())
+                foreach (var type in x.Value.GetTypes())
                 {
                     if (type.IsAbstract || !typeof(CustomEffectBase).IsAssignableFrom(type))
                         continue;

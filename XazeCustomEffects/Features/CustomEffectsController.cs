@@ -1,4 +1,11 @@
-﻿using System;
+﻿// Copyright (c) 2025 xaze_
+//
+// This source code is licensed under the MIT license found in the
+// LICENSE file in the root directory of this source tree.
+// 
+// I <3 🦈s :3c
+
+using System;
 using System.Collections.Generic;
 using CustomPlayerEffects;
 using HarmonyLib;
@@ -9,13 +16,6 @@ using Mirror.RemoteCalls;
 using PlayerRoles;
 using PlayerRoles.Spectating;
 using UnityEngine;
-// Copyright (c) 2025 xaze_
-//
-// This source code is licensed under the MIT license found in the
-// LICENSE file in the root directory of this source tree.
-// 
-// I <3 🦈s :3c
-
 using Utils.NonAllocLINQ;
 
 namespace XazeCustomEffects.Features
