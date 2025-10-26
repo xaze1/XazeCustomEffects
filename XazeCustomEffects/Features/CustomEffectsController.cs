@@ -156,7 +156,7 @@ namespace XazeCustomEffects.Features
         }
 
         [Server]
-        public CustomEffectBase ChangeState(string effectName, byte intensity, float duration = 0f, bool addDuration = false)
+        public CustomEffectBase ChangeState(string effectName, int intensity, float duration = 0f, bool addDuration = false)
         {
             if (!NetworkServer.active)
             {
@@ -225,6 +225,16 @@ namespace XazeCustomEffects.Features
         public T GetEffect<T>() where T : CustomEffectBase
         {
             if (!TryGetEffect<T>(out var playerEffect))
+            {
+                return null;
+            }
+
+            return playerEffect;
+        }
+
+        public CustomEffectBase GetEffect(Type effectType)
+        {
+            if (!_effectsByType.TryGetValue(effectType, out var playerEffect))
             {
                 return null;
             }

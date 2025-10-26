@@ -7,6 +7,7 @@
 
 using System;
 using HarmonyLib;
+using LabApi.Features;
 using LabApi.Loader.Features.Plugins;
 using LabApi.Loader.Features.Plugins.Enums;
 using MEC;
@@ -25,7 +26,7 @@ namespace XazeCustomEffects
         public override string Description => "Custom Effects API made by xaze_";
         public override string Author => "xaze_";
         public override Version Version => new(1, 0, 0);
-        public override Version RequiredApiVersion => new(0, 0, 0);
+        public override Version RequiredApiVersion => new(LabApiProperties.CompiledVersion);
         public override LoadPriority Priority => LoadPriority.Lowest;
 
         public override void Enable()
