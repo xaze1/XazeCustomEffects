@@ -189,6 +189,42 @@ namespace XazeCustomEffects.Features
             return playerEffect;
         }
 
+        public T AddIntensity<T>(int intensity, int maxIntensity = 0, float duration = 0f) where T : CustomEffectBase
+        {
+            if (!TryGetEffect<T>(out var playerEffect))
+            {
+                return null;
+            }
+
+            if (maxIntensity is 0 or > int.MaxValue)
+                maxIntensity = int.MaxValue;
+
+            playerEffect.Intensity = Mathf.Clamp(playerEffect.Intensity + intensity, 0, maxIntensity);
+
+            if (duration == 0) return playerEffect;
+            playerEffect.ServerChangeDuration(duration);
+
+            return playerEffect;
+        }
+
+        public T RemoveIntensity<T>(int intensity, int minIntensity, float duration = 0f) where T : CustomEffectBase
+        {
+            if (!TryGetEffect<T>(out var playerEffect))
+            {
+                return null;
+            }
+            
+            if (minIntensity < 0)
+                minIntensity = 0;
+
+            playerEffect.Intensity = Mathf.Clamp(playerEffect.Intensity - intensity, minIntensity, int.MaxValue);
+
+            if (duration == 0) return playerEffect;
+            playerEffect.ServerChangeDuration(duration);
+
+            return playerEffect;
+        }
+
         [Server]
         public T EnableEffect<T>(float duration = 0f, bool addDuration = false) where T : CustomEffectBase
         {
