@@ -130,13 +130,6 @@ namespace XazeCustomEffects.Features
             {
                 return;
             }
-            
-            if (!ActiveEffects.ContainsKey(Hub))
-            {
-                ActiveEffects.Add(Hub, new());
-            }
-                
-            ActiveEffects[Hub].Add(this);
 
             RefreshTime();
             OnEffectUpdate();
@@ -259,6 +252,8 @@ namespace XazeCustomEffects.Features
         public virtual void DisableEffect()
         {
             Intensity = 0;
+            Duration = 0;
+            TimeLeft = 0;
 
             if (!ActiveEffects.TryGetValue(Hub, out var effect))
             {

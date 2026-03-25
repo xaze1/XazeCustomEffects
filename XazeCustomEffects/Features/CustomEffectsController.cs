@@ -7,6 +7,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using CustomPlayerEffects;
 using HarmonyLib;
 using InventorySystem.Items;
@@ -22,7 +23,7 @@ namespace XazeCustomEffects.Features
 {
     public class CustomEffectsController : NetworkBehaviour
     {
-        public static Dictionary<ReferenceHub, CustomEffectsController> activeCustomControllers = new();
+        public static readonly Dictionary<ReferenceHub, CustomEffectsController> activeCustomControllers = new();
 
         public readonly Dictionary<Type, CustomEffectBase> _effectsByType = new();
 
@@ -104,20 +105,14 @@ namespace XazeCustomEffects.Features
 
         public bool TryGetEffect(string effectName, out CustomEffectBase playerEffect)
         {
-            CustomEffectBase[] allEffects = AllEffects;
-            foreach (CustomEffectBase statusEffectBase in allEffects)
+            foreach (CustomEffectBase statusEffectBase in AllEffects)
             {
-                if (statusEffectBase.Name.StartsWith(effectName, StringComparison.InvariantCultureIgnoreCase))
-                {
-                    playerEffect = statusEffectBase;
-                    return true;
-                }
-                else if(statusEffectBase.ToString().EndsWith(effectName, StringComparison.InvariantCultureIgnoreCase))
-                {
-                    playerEffect = statusEffectBase;
-                    return true;
-                }
-
+                if (!statusEffectBase.Name.StartsWith(effectName, StringComparison.InvariantCultureIgnoreCase) &&
+                    !statusEffectBase.ToString()
+                        .EndsWith(effectName, StringComparison.InvariantCultureIgnoreCase)) continue;
+                
+                playerEffect = statusEffectBase;
+                return true;
             }
 
             playerEffect = null;
@@ -145,8 +140,7 @@ namespace XazeCustomEffects.Features
                 return;
             }
 
-            CustomEffectBase[] allEffects = AllEffects;
-            foreach (CustomEffectBase statusEffectBase in allEffects)
+            foreach (CustomEffectBase statusEffectBase in AllEffects)
             {
                 if (statusEffectBase is IHealableEffect healablePlayerEffect && healablePlayerEffect.IsHealable(item.ItemTypeId))
                 {
@@ -196,7 +190,7 @@ namespace XazeCustomEffects.Features
                 return null;
             }
 
-            if (maxIntensity is 0 or > int.MaxValue)
+            if (maxIntensity is 0 || maxIntensity < intensity)
                 maxIntensity = int.MaxValue;
 
             playerEffect.Intensity = Mathf.Clamp(playerEffect.Intensity + intensity, 0, maxIntensity);
@@ -228,24 +222,12 @@ namespace XazeCustomEffects.Features
         [Server]
         public T EnableEffect<T>(float duration = 0f, bool addDuration = false) where T : CustomEffectBase
         {
-            if (!NetworkServer.active)
-            {
-                Debug.LogWarning("[Server] function 'T PlayerCustomEffectsController::EnableEffect(System.Single,System.Boolean)' called when server was not active");
-                return null;
-            }
-
             return ChangeState<T>(1, duration, addDuration);
         }
 
         [Server]
         public T DisableEffect<T>() where T : CustomEffectBase
         {
-            if (!NetworkServer.active)
-            {
-                Debug.LogWarning("[Server] function 'T PlayerCustomEffectsController::DisableEffect()' called when server was not active");
-                return null;
-            }
-
             return ChangeState<T>(0);
         }
 
@@ -315,7 +297,7 @@ namespace XazeCustomEffects.Features
         public void LoadEffects()
         {
 
-            effectsGameObject = this.gameObject;
+            effectsGameObject = gameObject;
             AllEffects = effectsGameObject.GetComponentsInChildren<CustomEffectBase>();
             EffectsLength = AllEffects.Length;
             var allEffects = AllEffects;
@@ -352,8 +334,8 @@ namespace XazeCustomEffects.Features
                 return;
             }
 
-            bool flag = oldRole.Team != Team.Dead && newRole.Team == Team.Dead;
-            CustomEffectBase[] allEffects = AllEffects;
+            bool flag = oldRole != null && oldRole.Team != Team.Dead && newRole.Team == Team.Dead;
+            var allEffects = AllEffects.ToList();
             foreach (CustomEffectBase statusEffectBase in allEffects)
             {
                 if (flag)
@@ -372,7 +354,7 @@ namespace XazeCustomEffects.Features
         {
             SpectatorTargetTracker.OnTargetChanged += delegate
             {
-                if (ReferenceHub.AllHubs.TryGetFirst((ReferenceHub x) => x.playerEffectsController._wasSpectated, out var first))
+                if (ReferenceHub.AllHubs.TryGetFirst(x => x.playerEffectsController._wasSpectated, out var first))
                 {
                     var allEffects = activeCustomControllers.GetValueSafe(first).AllEffects;
                     foreach (var t in allEffects)

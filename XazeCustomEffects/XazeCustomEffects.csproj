@@ -82,6 +82,7 @@
         <Compile Include="Features\CustomEffectBase.cs" />
         <Compile Include="Features\CustomEffectsController.cs" />
         <Compile Include="Features\CustomTickingBase.cs" />
+        <Compile Include="Features\PlayerExtensions.cs" />
         <Compile Include="Loader.cs" />
         <Compile Include="Patches\SearchTimePatch.cs" />
         <Compile Include="Patches\StaminaPatch.cs" />
