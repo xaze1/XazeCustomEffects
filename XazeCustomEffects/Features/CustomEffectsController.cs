@@ -27,7 +27,7 @@ namespace XazeCustomEffects.Features
 
         public readonly Dictionary<Type, CustomEffectBase> _effectsByType = new();
 
-        public readonly SyncList<byte> _syncEffectsIntensity = new SyncList<byte>();
+        public readonly SyncList<byte> _syncEffectsIntensity = new();
 
         public ReferenceHub Hub;
 
@@ -335,8 +335,7 @@ namespace XazeCustomEffects.Features
             }
 
             bool flag = oldRole != null && oldRole.Team != Team.Dead && newRole.Team == Team.Dead;
-            var allEffects = AllEffects.ToList();
-            foreach (CustomEffectBase statusEffectBase in allEffects)
+            foreach (CustomEffectBase statusEffectBase in AllEffects)
             {
                 if (flag)
                 {

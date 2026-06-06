@@ -112,9 +112,10 @@ namespace XazeCustomEffects.Features
             }
         }
 
-        public virtual string GetSpectatorText()
+        public virtual bool GetSpectatorText(out string s)
         {
-            return Name?? "CustomEffect(" + GetType().Name + ")";
+            s = Name ?? "CustomEffect(" + GetType().Name + ")";
+            return IsEnabled;
         }
 
         public void Awake()

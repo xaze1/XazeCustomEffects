@@ -20,12 +20,12 @@ namespace XazeCustomEffects
     public class Loader : Plugin
     {
         public const string PatchGroup = "XAZE-CustomEffects";
-        public static readonly Harmony HarmonyPatch = new Harmony("Xaze-Patches-CustomEffects");
+        public static readonly Harmony HarmonyPatch = new("Xaze-Patches-CustomEffects");
         
         public override string Name => "Xaze-CustomEffects";
         public override string Description => "Custom Effects API made by xaze_";
         public override string Author => "xaze_";
-        public override Version Version => new(1, 0, 0);
+        public override Version Version => new(1, 1, 0);
         public override Version RequiredApiVersion => new(LabApiProperties.CompiledVersion);
         public override LoadPriority Priority => LoadPriority.Lowest;
 
@@ -42,8 +42,8 @@ namespace XazeCustomEffects
 
         private static void SetupPlayer(ReferenceHub hub)
         {
-            if (hub.Mode == CentralAuth.ClientInstanceMode.Host || hub.Mode == CentralAuth.ClientInstanceMode.DedicatedServer || AudioManager.ActiveFakes.Contains(hub)) return;
-
+            if (hub.Mode == CentralAuth.ClientInstanceMode.Host || hub.Mode == CentralAuth.ClientInstanceMode.DedicatedServer || FakeManager.ActiveFakes.Contains(hub)) return;
+            
             var customEffectController = hub.gameObject.AddComponent<CustomEffectsController>();
 
             LabApi.Loader.PluginLoader.Plugins.ForEach(x =>
