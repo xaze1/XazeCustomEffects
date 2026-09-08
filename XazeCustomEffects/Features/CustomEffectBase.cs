@@ -24,6 +24,16 @@ namespace XazeCustomEffects.Features
 
         public List<EffectStack> Stacks { get; } = new();
 
+        public EffectStack? Stack
+        {
+            get
+            {
+                if (this is not IUnstackable)
+                    return null;
+                return Stacks.TryGet(0, out var stack) ? stack : null;
+            }
+        }
+
         public int _intensity;
 
         public enum EffectClassification
@@ -170,6 +180,9 @@ namespace XazeCustomEffects.Features
         {
             if (Stacks.Contains(stack))
                 return;
+            
+            if (this is IUnstackable)
+                Stacks.Clear();
             
             Stacks.Add(stack);
             UpdateIntensity();
