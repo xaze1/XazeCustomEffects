@@ -25,7 +25,7 @@ namespace XazeCustomEffects
         public override string Name => "Xaze-CustomEffects";
         public override string Description => "Custom Effects API made by xaze_";
         public override string Author => "xaze_";
-        public override Version Version => new(1, 1, 0);
+        public override Version Version => new(1, 1, 2);
         public override Version RequiredApiVersion => new(LabApiProperties.CompiledVersion);
         public override LoadPriority Priority => LoadPriority.Lowest;
 

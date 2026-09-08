@@ -6,6 +6,7 @@
 // // I <3 🦈s :3c
 
 using LabApi.Features.Wrappers;
+using XazeAPI.API.EffectStacks;
 
 namespace XazeCustomEffects.Features;
 
@@ -13,34 +14,32 @@ public static class PlayerExtensions
 {
     extension(Player plr)
     {
-        public void EnableCustomEffect<T>(int intensity, float duration = 0, bool addDuration = false) where T : CustomEffectBase
-        {
-            CustomEffectsController.EnableEffect<T>(plr, intensity, duration, addDuration);
-        }
-        
-        public void DisableCustomEffect<T>() where T : CustomEffectBase
-        {
-            CustomEffectsController.DisableEffect<T>(plr);
-        }
-        
-        public void AddIntensity<T>(int intensity, int maxIntensity = 0, float duration = 0) where T : CustomEffectBase
+        public void AddEffect<T>(EffectStack stack) where T : CustomEffectBase
         {
             if (!CustomEffectsController.TryGet(plr, out var controller))
-            {
                 return;
-            }
-            
-            controller.AddIntensity<T>(intensity, maxIntensity, duration);
+            controller.EnableEffect<T>(stack);
         }
         
-        public void RemoveIntensity<T>(int intensity, int minIntensity = 0, float duration = 0) where T : CustomEffectBase
+        public EffectStack? AddEffect<T>(int intensity, float duration = 0) where T : CustomEffectBase
         {
             if (!CustomEffectsController.TryGet(plr, out var controller))
-            {
-                return;
-            }
-            
-            controller.RemoveIntensity<T>(intensity, minIntensity, duration);
+                return null;
+            return controller.EnableEffect<T>(intensity, duration);
+        }
+        
+        public bool RemoveEffect<T>() where T : CustomEffectBase
+        {
+            if (!CustomEffectsController.TryGet(plr, out var controller))
+                return false;
+            return controller.DisableEffect<T>();
+        }
+        
+        public bool RemoveEffect<T>(EffectStack stack) where T : CustomEffectBase
+        {
+            if (!CustomEffectsController.TryGet(plr, out var controller))
+                return false;
+            return controller.DisableEffect<T>(stack);
         }
     }
 }

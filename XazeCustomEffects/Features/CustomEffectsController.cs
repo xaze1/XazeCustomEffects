@@ -18,89 +18,81 @@ using PlayerRoles;
 using PlayerRoles.Spectating;
 using UnityEngine;
 using Utils.NonAllocLINQ;
+using XazeAPI.API;
+using XazeAPI.API.EffectStacks;
 
 namespace XazeCustomEffects.Features
 {
     public class CustomEffectsController : NetworkBehaviour
     {
-        public static readonly Dictionary<ReferenceHub, CustomEffectsController> activeCustomControllers = new();
-
+        public static readonly Dictionary<ReferenceHub, CustomEffectsController> List = new();
         public readonly Dictionary<Type, CustomEffectBase> _effectsByType = new();
 
-        public readonly SyncList<byte> _syncEffectsIntensity = new();
+        public ReferenceHub? Hub;
+        public GameObject? effectsGameObject;
+        public CustomEffectBase[] AllEffects { get; private set; } = [];
 
-        public ReferenceHub Hub;
-
-        public GameObject effectsGameObject;
-
-        public CustomEffectBase[] AllEffects { get; private set; }
-
-        public int EffectsLength { get; set; }
-
-        public bool _wasSpectated;
-
-        public static CustomEffectsController Get(ReferenceHub hub)
+        public void EnableEffect<T>(EffectStack stack) where T : CustomEffectBase
         {
-            return activeCustomControllers.GetValueSafe(hub);
+            if (!TryGetEffect<T>(out var effect))
+                return;
+            effect.ServerAddStack(stack);
         }
         
-        public static CustomEffectsController Get(Player plr)
+        public EffectStack? EnableEffect<T>(int intensity = 1, float duration = 0f) where T : CustomEffectBase
         {
-            return activeCustomControllers.GetValueSafe(plr.ReferenceHub);
-        }
-
-        public static bool TryGet(ReferenceHub hub, out CustomEffectsController controller)
-        {
-            controller = null;
-
-            activeCustomControllers.TryGetValue(hub, out controller);
-
-            return controller is not null;
+            if (!TryGetEffect<T>(out var effect))
+                return null;
+            
+            var stack = new  EffectStack { Intensity = intensity, Duration = duration };
+            effect.ServerAddStack(stack);
+            return stack;
         }
         
-        public static bool TryGet(Player plr, out CustomEffectsController controller)
+        public bool DisableEffect<T>() where T : CustomEffectBase
         {
-            return TryGet(plr.ReferenceHub, out controller);
+            if (!TryGetEffect<T>(out var effect))
+                return false;
+            return effect.ServerDisable();
+        }
+        
+        public bool DisableEffect<T>(EffectStack stack) where T : CustomEffectBase
+        {
+            if (!TryGetEffect<T>(out var effect))
+                return false;
+            return effect.ServerRemoveStack(stack);
         }
 
-        public static void EnableEffect<T>(ReferenceHub Hub, int intensity, float duration = 0, bool addDuration = false) where T : CustomEffectBase
+        public static EffectStack? EnableEffect<T>(ReferenceHub Hub, int intensity, float duration = 0) where T : CustomEffectBase
         {
             if (!TryGet(Hub, out var controller))
-            {
-                return;
-            }
+                return null;
             
-            controller.ChangeState<T>(intensity, duration, addDuration);
+            return controller.EnableEffect<T>(intensity, duration);
+        }
+        
+        public static EffectStack? EnableEffect<T>(Player Hub, int intensity, float duration = 0) where T : CustomEffectBase
+        {
+            if (!TryGet(Hub, out var controller))
+                return null;
+            
+            return controller.EnableEffect<T>(intensity, duration);
         }
 
-        public static void EnableEffect<T>(Player Hub, int intensity, float duration = 0, bool addDuration = false) where T : CustomEffectBase
+        public static bool DisableEffect<T>(ReferenceHub Hub) where T : CustomEffectBase
         {
             if (!TryGet(Hub, out var controller))
-            {
-                return;
-            }
+                return false;
             
-            controller.ChangeState<T>(intensity, duration, addDuration);
+            return controller.DisableEffect<T>();
         }
 
-        public static void DisableEffect<T>(ReferenceHub Hub) where T : CustomEffectBase
+        public static bool DisableEffect<T>(Player Hub) where T : CustomEffectBase
         {
             if (!TryGet(Hub, out var controller))
-            {
-                return;
-            }
+                return false;
             
-            controller.DisableEffect<T>();
-        }
-
-        public static void DisableEffect<T>(Player Hub) where T : CustomEffectBase
-        {
-            if (!TryGet(Hub, out var controller))
-            {
-                return;
-            }
-            
-            controller.DisableEffect<T>();
+            return controller.DisableEffect<T>();
         }
 
         public bool TryGetEffect(string effectName, out CustomEffectBase playerEffect)
@@ -131,15 +123,8 @@ namespace XazeCustomEffects.Features
             return false;
         }
 
-        [Server]
         public void UseMedicalItem(ItemBase item)
         {
-            if (!NetworkServer.active)
-            {
-                Debug.LogWarning("[Server] function 'System.Void PlayerCustomEffectsController::UseMedicalItem(InventorySystem.Items.ItemBase)' called when server was not active");
-                return;
-            }
-
             foreach (CustomEffectBase statusEffectBase in AllEffects)
             {
                 if (statusEffectBase is IHealableEffect healablePlayerEffect && healablePlayerEffect.IsHealable(item.ItemTypeId))
@@ -149,8 +134,7 @@ namespace XazeCustomEffects.Features
             }
         }
 
-        [Server]
-        public CustomEffectBase ChangeState(string effectName, int intensity, float duration = 0f, bool addDuration = false)
+        public CustomEffectBase ChangeState(string effectName, int intensity, float duration = 0f)
         {
             if (!NetworkServer.active)
             {
@@ -160,14 +144,13 @@ namespace XazeCustomEffects.Features
 
             if (TryGetEffect(effectName, out var playerEffect))
             {
-                playerEffect.ServerSetState(intensity, duration, addDuration);
+                playerEffect.ServerSetState(intensity, duration);
             }
 
             return playerEffect;
         }
 
-        [Server]
-        public T ChangeState<T>(int intensity, float duration = 0f, bool addDuration = false) where T : CustomEffectBase
+        public T ChangeState<T>(int intensity, float duration = 0f) where T : CustomEffectBase
         {
             if (!NetworkServer.active)
             {
@@ -177,58 +160,10 @@ namespace XazeCustomEffects.Features
 
             if (TryGetEffect<T>(out var playerEffect))
             {
-                playerEffect.ServerSetState(intensity, duration, addDuration);
+                playerEffect.ServerSetState(intensity, duration);
             }
 
             return playerEffect;
-        }
-
-        public T AddIntensity<T>(int intensity, int maxIntensity = 0, float duration = 0f) where T : CustomEffectBase
-        {
-            if (!TryGetEffect<T>(out var playerEffect))
-            {
-                return null;
-            }
-
-            if (maxIntensity is 0 || maxIntensity < intensity)
-                maxIntensity = int.MaxValue;
-
-            playerEffect.Intensity = Mathf.Clamp(playerEffect.Intensity + intensity, 0, maxIntensity);
-
-            if (duration == 0) return playerEffect;
-            playerEffect.ServerChangeDuration(duration);
-
-            return playerEffect;
-        }
-
-        public T RemoveIntensity<T>(int intensity, int minIntensity, float duration = 0f) where T : CustomEffectBase
-        {
-            if (!TryGetEffect<T>(out var playerEffect))
-            {
-                return null;
-            }
-            
-            if (minIntensity < 0)
-                minIntensity = 0;
-
-            playerEffect.Intensity = Mathf.Clamp(playerEffect.Intensity - intensity, minIntensity, int.MaxValue);
-
-            if (duration == 0) return playerEffect;
-            playerEffect.ServerChangeDuration(duration);
-
-            return playerEffect;
-        }
-
-        [Server]
-        public T EnableEffect<T>(float duration = 0f, bool addDuration = false) where T : CustomEffectBase
-        {
-            return ChangeState<T>(1, duration, addDuration);
-        }
-
-        [Server]
-        public T DisableEffect<T>() where T : CustomEffectBase
-        {
-            return ChangeState<T>(0);
         }
 
         public void DisableAllEffects()
@@ -243,86 +178,52 @@ namespace XazeCustomEffects.Features
         public T GetEffect<T>() where T : CustomEffectBase
         {
             if (!TryGetEffect<T>(out var playerEffect))
-            {
                 return null;
-            }
-
             return playerEffect;
         }
 
         public CustomEffectBase GetEffect(Type effectType)
         {
             if (!_effectsByType.TryGetValue(effectType, out var playerEffect))
-            {
                 return null;
-            }
-
             return playerEffect;
-        }
-
-        public void ServerSendPulse<T>() where T : IPulseEffect
-        {
-            for (int i = 0; i < EffectsLength; i++)
-            {
-                if (AllEffects[i] is not T)
-                {
-                    continue;
-                }
-                
-                byte index = (byte)Mathf.Min(i, 255);
-                TargetRpcReceivePulse(Hub.connectionToClient, index);
-                SpectatorNetworking.ForeachSpectatorOf(Hub, delegate (ReferenceHub x)
-                {
-                    TargetRpcReceivePulse(x.connectionToClient, index);
-                });
-                break;
-            }
-        }
-
-        [TargetRpc]
-        public void TargetRpcReceivePulse(NetworkConnection _, byte effectIndex)
-        {
-            NetworkWriterPooled writer = NetworkWriterPool.Get();
-            NetworkWriterExtensions.WriteByte(writer, effectIndex);
-            SendTargetRPCInternal(_, "System.Void PlayerCustomEffectsController::TargetRpcReceivePulse(Mirror.NetworkConnection,System.Byte)", 483637978, writer, 0);
-            NetworkWriterPool.Return(writer);
         }
 
         public void Awake()
         {
-            Hub = ReferenceHub.GetHub(base.gameObject);
-            activeCustomControllers.Add(Hub, this);
+            if (gameObject.TryGetComponent(out CustomEffectsController controller) && controller != this)
+            {
+                Destroy(this);
+                Logging.Warn("A second", nameof(CustomEffectsController), "was added to", gameObject);
+                return;
+            }
+            
+            Hub = ReferenceHub.GetHub(gameObject);
+            List.Add(Hub, this);
         }
 
         public void LoadEffects()
         {
-
             effectsGameObject = gameObject;
             AllEffects = effectsGameObject.GetComponentsInChildren<CustomEffectBase>();
-            EffectsLength = AllEffects.Length;
             var allEffects = AllEffects;
             foreach (CustomEffectBase statusEffectBase in allEffects)
             {
                 _effectsByType.Add(statusEffectBase.GetType(), statusEffectBase);
-                _syncEffectsIntensity.Add(0);
             }
         }
 
-        public void Update()
+        private void Start()
         {
+            effectsGameObject?.SetActive(value: true);
         }
 
-        public void Start()
-        {
-            effectsGameObject.SetActive(value: true);
-        }
-
-        public void OnEnable()
+        private void OnEnable()
         {
             PlayerRoleManager.OnRoleChanged += OnRoleChanged;
         }
 
-        public void OnDisable()
+        private void OnDisable()
         {
             PlayerRoleManager.OnRoleChanged -= OnRoleChanged;
         }
@@ -335,77 +236,59 @@ namespace XazeCustomEffects.Features
             }
 
             bool flag = oldRole != null && oldRole.Team != Team.Dead && newRole.Team == Team.Dead;
-            foreach (CustomEffectBase statusEffectBase in AllEffects)
+            foreach (var effect in AllEffects)
             {
                 if (flag)
                 {
-                    statusEffectBase.OnDeath(oldRole);
+                    effect.OnDeath(oldRole);
                 }
                 else
                 {
-                    statusEffectBase.OnRoleChanged(oldRole, newRole);
+                    effect.OnRoleChanged(oldRole, newRole);
                 }
             }
         }
-
-        [RuntimeInitializeOnLoadMethod]
-        public static void Init()
+        
+        public static CustomEffectsController? Get(Player plr)
         {
-            SpectatorTargetTracker.OnTargetChanged += delegate
-            {
-                if (ReferenceHub.AllHubs.TryGetFirst(x => x.playerEffectsController._wasSpectated, out var first))
-                {
-                    var allEffects = activeCustomControllers.GetValueSafe(first).AllEffects;
-                    foreach (var t in allEffects)
-                    {
-                        t.OnStopSpectating();
-                    }
-
-                    activeCustomControllers.GetValueSafe(first)._wasSpectated = false;
-                }
-
-                if (!SpectatorTargetTracker.TryGetTrackedPlayer(out var hub)) return;
-                {
-                    CustomEffectsController playerEffectsController = activeCustomControllers.GetValueSafe(hub);
-                    foreach (var t in playerEffectsController.AllEffects)
-                    {
-                        t.OnBeginSpectating();
-                    }
-
-                    playerEffectsController._wasSpectated = true;
-                }
-            };
+            if (!List.TryGetValue(plr.ReferenceHub, out var controller))
+                return plr.GameObject?.AddComponent<CustomEffectsController>();
+            
+            return controller;
+        }
+        
+        public static CustomEffectsController? Get(ReferenceHub? hub)
+        {
+            if (hub == null)
+                return null;
+            
+            if (!List.TryGetValue(hub, out var controller))
+                return hub.gameObject.AddComponent<CustomEffectsController>();
+            
+            return controller;
         }
 
-        public CustomEffectsController()
+        public static bool TryGet(ReferenceHub? hub, out CustomEffectsController controller)
         {
-            InitSyncObject(_syncEffectsIntensity);
-        }
+            controller = null;
+            if (hub == null)
+                return false;
 
-        public void UserCode_TargetRpcReceivePulse__NetworkConnection__Byte(NetworkConnection _, byte effectIndex)
-        {
-            int num = Mathf.Min(effectIndex, EffectsLength - 1);
-            if (AllEffects[num] is IPulseEffect pulseEffect)
-            {
-                pulseEffect.ExecutePulse();
-            }
+            if (!List.TryGetValue(hub, out var customController)) 
+                return false;
+            
+            controller = customController;
+            return true;
         }
-
-        public static void InvokeUserCode_TargetRpcReceivePulse__NetworkConnection__Byte(NetworkBehaviour obj, NetworkReader reader, NetworkConnectionToClient senderConnection)
+        
+        public static bool TryGet(Player plr, out CustomEffectsController controller)
         {
-            if (!NetworkClient.active)
-            {
-                Debug.LogError("TargetRPC TargetRpcReceivePulse called on server.");
-            }
-            else
-            {
-                ((PlayerEffectsController)obj).UserCode_TargetRpcReceivePulse__NetworkConnection__Byte(null, NetworkReaderExtensions.ReadByte(reader));
-            }
-        }
-
-        static CustomEffectsController()
-        {
-            RemoteProcedureCalls.RegisterRpc(typeof(CustomEffectsController), "System.Void PlayerCustomEffectsController::TargetRpcReceivePulse(Mirror.NetworkConnection,System.Byte)", InvokeUserCode_TargetRpcReceivePulse__NetworkConnection__Byte);
+            controller = null;
+            if (!List.TryGetValue(plr.ReferenceHub, out var customController)) 
+                return false;
+            
+            controller = customController;
+            return true;
         }
     }
 }

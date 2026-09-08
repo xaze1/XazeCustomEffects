@@ -12,26 +12,19 @@ using HarmonyLib;
 using Mirror;
 using PlayerRoles;
 using UnityEngine;
+using XazeAPI.API.EffectStacks;
 
 namespace XazeCustomEffects.Features
 {
     public abstract class CustomEffectBase : MonoBehaviour
     {
-        public static readonly Dictionary<ReferenceHub, List<CustomEffectBase>> ActiveEffects = new();
+        public static event Action<CustomEffectBase>? OnEnabled;
+        public static event Action<CustomEffectBase>? OnDisabled;
+        public static event Action<CustomEffectBase, int, int>? OnIntensityChanged;
 
-        public static Dictionary<Type, CustomEffectBase> _effectsByType = new();
-
-        public static event Action<CustomEffectBase> OnEnabled;
-
-        public static event Action<CustomEffectBase> OnDisabled;
-
-        public static event Action<CustomEffectBase, int, int> OnIntensityChanged;
+        public List<EffectStack> Stacks { get; } = new();
 
         public int _intensity;
-
-        public float _duration;
-
-        public float _timeLeft;
 
         public enum EffectClassification
         {
@@ -56,22 +49,21 @@ namespace XazeCustomEffects.Features
                 {
                     return !Vitality.CheckPlayer(Hub);
                 }
-
                 return false;
             }
         }
 
-        public virtual string Name { get; set; }
+        public abstract string Name { get; }
 
         public int Intensity
         {
             get => _intensity;
-            set
+            private set
             {
-                if (value <= _intensity || AllowEnabling)
-                {
-                    ForceIntensity(value);
-                }
+                if (value > _intensity && !AllowEnabling)
+                    return;
+                
+                ForceIntensity(value);
             }
         }
 
@@ -84,69 +76,72 @@ namespace XazeCustomEffects.Features
             get => Intensity > 0;
             set
             {
-                if (value != IsEnabled)
-                {
-                    Intensity = (value ? 1 : 0);
-                }
-            }
-        }
-
-        public float Duration
-        {
-            get => _duration;
-            set => _duration = Mathf.Max(0f, value);
-        }
-
-        public float TimeLeft
-        {
-            get => _timeLeft;
-            set
-            {
-                _timeLeft = Mathf.Max(0f, value);
-                if (_timeLeft != 0f || Duration == 0f)
-                {
+                if (value == IsEnabled)
                     return;
-                }
                 
-                DisableEffect();
+                if (value)
+                    ServerSetState(1);
+                else
+                    ServerDisable();
             }
         }
 
         public virtual bool GetSpectatorText(out string s)
         {
-            s = Name ?? "CustomEffect(" + GetType().Name + ")";
+            s = Name;
             return IsEnabled;
         }
 
-        public void Awake()
+        private void Awake()
         {
             Hub = ReferenceHub.GetHub(transform.root.gameObject);
-            Name ??= GetType().Name;
             OnAwake();
         }
 
-        public virtual void Update()
+        protected virtual void Update()
         {
             if (!IsEnabled)
             {
                 return;
             }
 
-            RefreshTime();
+            UpdateStacks();
             OnEffectUpdate();
         }
 
-        public void RefreshTime()
+        private void UpdateIntensity()
         {
-            if (Duration == 0f)
+            int intensity = 0;
+            Stacks.Sort((a, b) => a.MaxIntensity.CompareTo(b.MaxIntensity));
+            foreach (var stack in Stacks)
             {
-                return;
+                if (stack.IsActive)
+                    intensity = Mathf.Min(intensity + stack.MaxIntensity, Mathf.Min(stack.MaxIntensity, MaxIntensity));
             }
             
-            TimeLeft -= Time.deltaTime;
+            intensity = Mathf.Max(intensity, 0);
+            if (Intensity == intensity)
+                return;
+            
+            Intensity = (byte) intensity;
         }
 
-        public void ForceIntensity(int value)
+        private void UpdateStacks()
+        {
+            for (int i = Stacks.Count; i >= 0; i--)
+            {
+                var stack = Stacks[i];
+                stack.RefreshTime(Time.deltaTime);
+                
+                if (stack.Duration == 0 || stack.TimeLeft > 0 || !stack.CanBeRemoved)
+                    continue;
+                Stacks.RemoveAt(i);
+            }
+            
+            UpdateIntensity();
+        }
+
+        private void ForceIntensity(int value)
         {
             if (_intensity == value)
                 return;
@@ -158,13 +153,6 @@ namespace XazeCustomEffects.Features
 
             if (flag)
             {
-                if (!ActiveEffects.ContainsKey(Hub))
-                    ActiveEffects.Add(Hub, [this]);
-                else
-                {
-                    if (!ActiveEffects[Hub].Contains(this))
-                        ActiveEffects[Hub].AddItem(this);
-                }
                 OnEnabled?.Invoke(this);
                 Enabled();
             }
@@ -178,53 +166,49 @@ namespace XazeCustomEffects.Features
             IntensityChanged(intensity, value);
         }
 
-        [Server]
-        public void ServerSetState(int intensity, float duration = 0f, bool addDuration = false)
+        public void ServerAddStack(EffectStack stack)
         {
-            OnIntensityChanged?.Invoke(this, Intensity, intensity);
-            Intensity = intensity;
-            ServerChangeDuration(duration, addDuration);
+            if (Stacks.Contains(stack))
+                return;
+            
+            Stacks.Add(stack);
+            UpdateIntensity();
         }
 
-        [Server]
-        public void ServerDisable()
+        public bool ServerRemoveStack(EffectStack stack)
+        {
+            var outcome = Stacks.Remove(stack);
+            UpdateIntensity();
+            return outcome;
+        }
+
+        public void ServerSetState(int intensity, float duration = 0f)
         {
             DisableEffect();
+            ServerAddStack(new EffectStack { Intensity = intensity, Duration = duration });
         }
 
-        [Server]
-        public void ServerChangeDuration(float duration, bool addDuration = false)
-        {
-            if (addDuration && duration > 0f)
-            {
-                Duration += duration;
-                TimeLeft += duration;
-            }
-            else
-            {
-                Duration = duration;
-                TimeLeft = Duration;
-            }
-        }
+        public bool ServerDisable() => DisableEffect();
 
-        public virtual void Start()
+        protected virtual void Start()
         {
             _intensity = 1;
             DisableEffect();
         }
-        public virtual void Enabled()
+        
+        protected virtual void Enabled()
         {
         }
 
-        public virtual void Disabled()
+        protected virtual void Disabled()
         {
         }
 
-        public virtual void OnAwake()
+        protected virtual void OnAwake()
         {
         }
 
-        public virtual void OnEffectUpdate()
+        protected virtual void OnEffectUpdate()
         {
         }
 
@@ -250,18 +234,28 @@ namespace XazeCustomEffects.Features
         {
         }
 
-        public virtual void DisableEffect()
+        protected virtual bool DisableEffect()
         {
-            Intensity = 0;
-            Duration = 0;
-            TimeLeft = 0;
+            if (Stacks.Count == 0)
+                return false;
 
-            if (!ActiveEffects.TryGetValue(Hub, out var effect))
+            var hasLockedStacks = false;
+            for (int i = Stacks.Count -1; i >= 0; i--)
             {
-                return;
+                if (Stacks[i].CanBeRemoved)
+                    Stacks.RemoveAt(i);
+                else
+                    hasLockedStacks = true;
+            }
+
+            if (hasLockedStacks)
+            {
+                UpdateIntensity();
+                return false;
             }
             
-            effect.Remove(this);
+            Intensity = 0;
+            return true;
         }
 
         public override string ToString()

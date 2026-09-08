@@ -7,9 +7,11 @@
 
 using System;
 using CommandSystem;
+using LabApi.Features.Wrappers;
 using RemoteAdmin;
 using Utils;
 using XazeAPI.API;
+using XazeAPI.Features;
 using XazeCustomEffects.Features;
 
 namespace XazeCustomEffects.Commands
@@ -43,13 +45,12 @@ namespace XazeCustomEffects.Commands
 
             if (arguments.Count < 4)
             {
-                if (sender is not PlayerCommandSender cmdSender ||
-                    !CustomPlayer.TryGet(cmdSender.ReferenceHub, out CustomPlayer User))
+                if (!Player.TryGet(sender, out var plr))
                 {
                     return returnUsage(arguments, out response);
                 }
                 
-                if (CustomEffectsController.TryGet(User.Player, out var contr) && contr.TryGetEffect(arguments.At(0), out var effect))
+                if (CustomEffectsController.TryGet(plr, out var contr) && contr.TryGetEffect(arguments.At(0), out var effect))
                 {
                     effect.ServerSetState(intensity, duration);
 
@@ -70,12 +71,7 @@ namespace XazeCustomEffects.Commands
             int index = 0;
             foreach (ReferenceHub target in targets)
             {
-                if (!CustomPlayer.TryGet(target, out CustomPlayer User))
-                {
-                    continue;
-                }
-                    
-                if (CustomEffectsController.TryGet(User.Player, out var contr) && contr.TryGetEffect(arguments.At(0), out var effect))
+                if (CustomEffectsController.TryGet(target, out var contr) && contr.TryGetEffect(arguments.At(0), out var effect))
                 {
                     effect.ServerSetState(intensity, duration);
 

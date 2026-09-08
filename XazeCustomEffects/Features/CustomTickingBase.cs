@@ -13,13 +13,13 @@ namespace XazeCustomEffects.Features
     {
         public abstract void OnTick();
 
-        public override void Enabled()
+        protected override void Enabled()
         {
             base.Enabled();
             _timeTillTick = TimeBetweenTicks;
         }
 
-        public override void OnEffectUpdate()
+        protected override void OnEffectUpdate()
         {
             base.OnEffectUpdate();
             _timeTillTick -= Time.deltaTime;
@@ -31,7 +31,7 @@ namespace XazeCustomEffects.Features
             OnTick();
         }
 
-        public virtual float TimeBetweenTicks => 1f;
+        protected virtual float TimeBetweenTicks => 1f;
         public float _timeTillTick;
     }
 }
